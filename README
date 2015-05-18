@@ -1,0 +1,2 @@
+sshf is an interface that uses regex matching, allowing for shortcuts when
+typing in commands.
