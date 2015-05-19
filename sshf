@@ -1,3 +1,9 @@
 #! /bin/bash
 
-# config
+# Function to read config file and return the correct host
+function config_host {
+    host_reg=$1
+    grep "$host_reg" config
+}
+
+echo $(config_host 1)
