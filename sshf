@@ -6,4 +6,9 @@ function config_host {
     grep "$host_reg" config
 }
 
+# Function to parse the arguments
+function parse_arg {
+
+}
+
 echo $(config_host 1)
