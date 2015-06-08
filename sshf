@@ -2,8 +2,14 @@
 
 # Function to read config file and return the correct host
 function config_host {
-    host_reg=$1
-    grep "$host_reg" config
+    host_re=$1
+    hosts=$(sed "4q;d" config)
+}
+
+# Function to read config file and return the correct server
+function config_server {
+    server_re=$1
+    servers=$(sed "7q;d" config)
 }
 
 # Function to parse the arguments
@@ -11,4 +17,4 @@ function parse_arg {
 
 }
 
-echo $(config_host 1)
+echo $(config_server 1)
