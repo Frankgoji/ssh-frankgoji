@@ -3,5 +3,5 @@ Config file to store hostnames and servernames
 Hosts (shortcut:fullname pairs separated by semicolons)
 short1:host1;short2:host2
 
-Servers (separated by semicolons)
-server1;server2
+servers (shortcut:fullname pairs separated by semicolons)
+short1:server1;short2:server2
