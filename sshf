@@ -35,10 +35,13 @@ function error {
 # Tests config_host to see if it returns the correct pattern, or correctly
 # errors.
 function test_config_host {
-    RESULT=$(config_host "something" -t "something else")
+    RESULT=$(config_host "test" -t "sometest;helloworld;something")
     if [[ $RESULT == "Not finished" ]]; then
-        error "Test failed"
+        error "Unimplemented: config_host"
+    elif [[ $RESULT != "sometest" ]]; then
+        error "config_host test failed, got $RESULT"
     fi
+    echo "config_host test successfully conducted"
 }
 
 ##### Main program #####
