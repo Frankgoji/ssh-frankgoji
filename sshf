@@ -1,10 +1,16 @@
 #! /bin/bash
 
 # Function to read config file and return the correct host
-# Idea: use arrays
 function config_host {
     host_re=$1
-    hosts=$(sed "4q;d" config)
+    if [[ $# == 3 && $2 == "-t" ]]; then
+        hosts=$3
+    elif [[ $# == 1 ]]; then
+        hosts=$(sed "4q;d" config)
+    else
+        error "Usage: one arg=host pattern or -t: provide list of hosts"
+    fi
+    echo "Not finished"
 }
 
 # Function to read config file and return the correct server
@@ -15,7 +21,7 @@ function config_server {
 
 # Function to parse the arguments
 function parse_arg {
-
+    return 1
 }
 
 # Error function
@@ -24,4 +30,16 @@ function error {
     exit 1
 }
 
-echo $(config_server 1)
+### Unit Tests ###
+
+# Tests config_host to see if it returns the correct pattern, or correctly
+# errors.
+function test_config_host {
+    RESULT=$(config_host "something" -t "something else")
+    if [[ $RESULT == "Not finished" ]]; then
+        error "Test failed"
+    fi
+}
+
+##### Main program #####
+test_config_host
