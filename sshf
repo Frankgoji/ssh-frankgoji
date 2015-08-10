@@ -1,22 +1,29 @@
 #! /bin/bash
 
-# Function to read config file and return the correct host
-function config_host {
-    host_re=$1
+# Function to read config file and return the correct host or correct server
+function config_pattern {
+    pattern_re=$1
     if [[ $# == 3 && $2 == "-t" ]]; then
-        hosts=$3
-    elif [[ $# == 1 ]]; then
-        hosts=$(sed "4q;d" config)
+        names=$3
+        types="tests"
+    elif [[ $# == 2 && $2 == "-h" ]]; then
+        names=$(sed "4q;d" config)
+        types="hosts"
+    elif [[ $# == 2 && $2 == "-s" ]]; then
+        names=$(sed "7q;d" config)
+        types="servers"
     else
-        error "Usage: one arg=host pattern or -t: provide list of hosts"
+        echo "Usage:"
+        error "          config_pattern [pattern] [-h/-s/-t] [if -t: test sequence]"
     fi
-    echo "Not finished"
-}
-
-# Function to read config file and return the correct server
-function config_server {
-    server_re=$1
-    servers=$(sed "7q;d" config)
+    IFS=';' read -ra ARR <<< "$names"
+    for h in "${ARR[@]}"; do
+        if [[ "$h" =~ "$pattern_re" ]]; then
+            echo "$h"
+            return 0
+        fi
+    done
+    error "Pattern \"$pattern_re\" matches no $types"
 }
 
 # Function to parse the arguments
@@ -32,17 +39,17 @@ function error {
 
 ### Unit Tests ###
 
-# Tests config_host to see if it returns the correct pattern, or correctly
+# Tests config_pattern to see if it returns the correct pattern, or correctly
 # errors.
-function test_config_host {
-    RESULT=$(config_host "test" -t "sometest;helloworld;something")
+function test_config_pattern {
+    RESULT=$(config_pattern "test" -t "sometest;helloworld;something")
     if [[ $RESULT == "Not finished" ]]; then
-        error "Unimplemented: config_host"
+        error "Unimplemented: config_pattern"
     elif [[ $RESULT != "sometest" ]]; then
-        error "config_host test failed, got $RESULT"
+        error "config_pattern test failed, got $RESULT"
     fi
-    echo "config_host test successfully conducted"
+    echo "config_pattern test successfully conducted"
 }
 
 ##### Main program #####
-test_config_host
+test_config_pattern

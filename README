@@ -3,4 +3,5 @@ typing in commands. This allows you to specify the host and the server with a
 minimum of typing. Furthermore, it allows you to easily specify different
 server/hostname combinations without requiring a configuration to specify each
 one (e.g. to switch from the hive1 server to hive21). This interface preserves
-the arguments that can be used with ssh.
+the arguments that can be used with ssh and also allows integration with the
+sshfs command.
