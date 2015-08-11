@@ -14,7 +14,7 @@ function config_pattern {
         types="servers"
     else
         echo "Usage:"
-        error "          config_pattern [pattern] [-h/-s/-t] [if -t: test sequence]"
+        error "      config_pattern [pattern] [-h/-s/-t] [if -t: test sequence]"
     fi
     IFS=';' read -ra ARR <<< "$names"
     for h in "${ARR[@]}"; do
@@ -26,14 +26,89 @@ function config_pattern {
     error "Pattern \"$pattern_re\" matches no $types"
 }
 
+# Function describing the usage for this command
+function usage {
+    echo "Usage:"
+    echo "          sshf [--help/--cp/--fs/--vm]? [pre-args] host@server [post-args]"
+    echo "      --help:     Print this usage message"
+    echo "      --cp:       Do scp instead of ssh"
+    echo "      --fs:       Do sshfs instead of ssh"
+    echo "      --vm:       Take the host and server verbatim; don't check the config"
+    echo "      pre-args:   Any arguments that appear before host@server"
+    echo "      host@server The host regex pattern and the server regex pattern"
+    echo "      post-args:  Any arguments that appear after host@server"
+}
+
 # Function to parse the arguments
 function parse_arg {
-    return 1
+    COMM="ssh"
+    CHECK_CONFIG=true
+    AT=""
+    PREARGS=""
+    POSTARGS=""
+    if [[ "$1" == "--help" ]]; then
+        echo usage
+        error
+    fi
+
+    if [[ "$1" == "--cp" ]]; then
+        COMM="scp"
+        shift
+    elif [[ "$1" == "--fs" ]]; then
+        COMM="sshfs"
+        shift
+    fi
+
+    if [[ "$1" == "--vm" ]]; then
+        CHECK_CONFIG=false
+        shift
+    fi
+
+    BEFORE_AT=true
+    while [ $# != 0 ]; do
+        if [[ "$1" =~ "@" ]]; then
+            if [[ $CHECK_CONFIG = false ]]; then
+                AT=$1
+            else
+                host_cap="(^.*)@"
+                if [[ $1 =~ $host_cap ]]; then
+                    host_pattern=${BASH_REMATCH[1]}
+                    AT="$(config_pattern $host_pattern -h)@"
+                fi
+                if [[ $COMM != "scp" ]]; then
+                    server_cap="@(.*$)"
+                    if [[ $1 =~ $server_cap ]]; then
+                        server_pattern=${BASH_REMATCH[1]}
+                        AT="$AT$(config_pattern $server_pattern -s)"
+                    fi
+                else
+                    server_cap="@(.*):"
+                    if [[ $1 =~ $server_cap ]]; then
+                        server_pattern=${BASH_REMATCH[1]}
+                        AT="$AT$(config_pattern $server_pattern -s)"
+                    fi
+                    file_cap=":(.*$)"
+                    if [[ $1 =~ $file_cap ]]; then
+                        files=${BASH_REMATCH[1]}
+                        AT="$AT:$files"
+                    fi
+                fi
+            fi
+            BEFORE_AT=false
+        elif [[ "$BEFORE_AT" = true ]]; then
+            PREARGS="$PREARGS $1"
+        else
+            POSTARGS="$POSTARGS $1"
+        fi
+        shift
+    done
+
+    echo $COMM $PREARGS $AT $POSTARGS
 }
 
 # Error function
 function error {
-    echo "$@"
+    echo "$@" >&2
     exit 1
 }
 
@@ -42,14 +117,42 @@ function error {
 # Tests config_pattern to see if it returns the correct pattern, or correctly
 # errors.
 function test_config_pattern {
-    RESULT=$(config_pattern "test" -t "sometest;helloworld;something")
+    RESULT=$(config_pattern "thing" -t "sometest;helloworld;something")
     if [[ $RESULT == "Not finished" ]]; then
         error "Unimplemented: config_pattern"
-    elif [[ $RESULT != "sometest" ]]; then
+    elif [[ $RESULT != "something" ]]; then
+        error "config_pattern test failed, got $RESULT"
+    fi
+
+    RESULT=$(config_pattern "1" -h)
+    if [[ $RESULT != "host1" ]]; then
         error "config_pattern test failed, got $RESULT"
     fi
     echo "config_pattern test successfully conducted"
 }
 
+# Tests parse_arg to see if it correctly echos the command to be evaluated
+function test_parse_arg {
+    RESULT=$(parse_arg --cp --vm -xarg abc@efg:something.jpg -nowhere)
+    if [[ $RESULT == "Not finished" ]]; then
+        error "Unimplemented: parse_arg"
+    elif [[ $RESULT != "scp -xarg abc@efg:something.jpg -nowhere" ]]; then
+        error "parse_arg test failed, got $RESULT"
+    fi
+
+    RESULT=$(parse_arg --fs -sup 1@2 -nup)
+    if [[ $RESULT != "sshfs -sup host1@server2 -nup" ]]; then
+        error "parse_arg test failed, got $RESULT"
+    fi
+    echo "parse_arg test successfully conducted"
+}
+
 ##### Main program #####
-test_config_pattern
+
+# For testing purposes, uncomment
+# test_config_pattern
+# test_parse_arg
+
+EXECUTE="$(parse_arg $@)"
+echo $EXECUTE
+eval "$EXECUTE"
