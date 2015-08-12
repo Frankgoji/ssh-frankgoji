@@ -18,7 +18,19 @@ function config_pattern {
     fi
     IFS=';' read -ra ARR <<< "$names"
     for h in "${ARR[@]}"; do
-        if [[ "$h" =~ "$pattern_re" ]]; then
+        if [[ "$h" =~ "(" ]]; then
+            in_parens="\((.*)\)"
+            if [[ "$h" =~ $in_parens ]]; then
+                in_parens=${BASH_REMATCH[1]}
+            fi
+            if [[ "$pattern_re" =~ $in_parens ]]; then
+                out_parens="(^.*)\(.*\)(.*$)"
+                if [[ "$h" =~ $out_parens ]]; then
+                    echo "${BASH_REMATCH[1]}$pattern_re${BASH_REMATCH[2]}"
+                    return 0
+                fi
+            fi
+        elif [[ "$h" =~ "$pattern_re" ]]; then
             echo "$h"
             return 0
         fi
@@ -126,6 +138,10 @@ function test_config_pattern {
 
     RESULT=$(config_pattern "1" -h)
     if [[ $RESULT != "host1" ]]; then
+        error "config_pattern test failed, got $RESULT"
+    fi
+    RESULT=$(config_pattern "8" -s)
+    if [[ $RESULT != "server8" ]]; then
         error "config_pattern test failed, got $RESULT"
     fi
     echo "config_pattern test successfully conducted"
