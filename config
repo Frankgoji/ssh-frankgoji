@@ -1,7 +1,7 @@
 Config file to store hostnames and servernames
 
-Hosts (fullname of hosts separated by semicolons)
-host1;host2
+Hosts (fullname of hosts or regex patterns separated by semicolons)
+host1;host2;host([3-9])
 
-servers (shortcut:fullname pairs separated by semicolons)
-server1;server2
+Servers (fullname of servers or regex patterns separated by semicolons)
+server1;server([2-8])

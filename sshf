@@ -7,10 +7,10 @@ function config_pattern {
         names=$3
         types="tests"
     elif [[ $# == 2 && $2 == "-h" ]]; then
-        names=$(sed "4q;d" config)
+        names=$(sed "4q;d" ~/Documents/personal_projects/sshf/config)
         types="hosts"
     elif [[ $# == 2 && $2 == "-s" ]]; then
-        names=$(sed "7q;d" config)
+        names=$(sed "7q;d" ~/Documents/personal_projects/sshf/config)
         types="servers"
     else
         echo "Usage:"
@@ -170,5 +170,5 @@ function test_parse_arg {
 # test_parse_arg
 
 EXECUTE="$(parse_arg $@)"
-echo $EXECUTE
+if [[ $EXECUTE != "usage" ]]; then echo $EXECUTE; fi
 eval "$EXECUTE"
