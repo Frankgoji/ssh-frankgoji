@@ -41,11 +41,12 @@ function config_pattern {
 # Function describing the usage for this command
 function usage {
     echo "Usage:"
-    echo "          sshf [--help/--cp/--fs/--vm]? [pre-args] host@server [post-args]"
+    echo "          sshf [--help/--cp/--fs/--vm/--pc]? [pre-args] host@server [post-args]"
     echo "      --help:     Print this usage message"
     echo "      --cp:       Do scp instead of ssh"
     echo "      --fs:       Do sshfs instead of ssh"
     echo "      --vm:       Take the host and server verbatim; don't check the config"
+    echo "      --pc:       Print the command without executing"
     echo "      pre-args:   Any arguments that appear before host@server"
     echo "      host@server The host regex pattern and the server regex pattern"
     echo "      post-args:  Any arguments that appear after host@server"
@@ -58,6 +59,7 @@ function parse_arg {
     AT=""
     PREARGS=""
     POSTARGS=""
+    RUN=true
     if [[ "$1" == "--help" ]]; then
         echo usage
         error
@@ -73,6 +75,11 @@ function parse_arg {
 
     if [[ "$1" == "--vm" ]]; then
         CHECK_CONFIG=false
+        shift
+    fi
+
+    if [[ "$1" == "--pc" ]]; then
+        RUN=false
         shift
     fi
 
@@ -116,6 +123,10 @@ function parse_arg {
     done
 
     echo $COMM $PREARGS $AT $POSTARGS
+
+    if [[ $RUN == "false" ]]; then
+        error
+    fi
 }
 
 # Error function
@@ -170,5 +181,6 @@ function test_parse_arg {
 # test_parse_arg
 
 EXECUTE="$(parse_arg $@)"
+if [[ $? -ne 0 ]]; then echo $EXECUTE; error; fi
 if [[ $EXECUTE != "usage" ]]; then echo $EXECUTE; fi
 eval "$EXECUTE"
