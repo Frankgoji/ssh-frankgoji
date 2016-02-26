@@ -14,7 +14,9 @@ function config_pattern {
         types="servers"
     else
         echo "Usage:"
-        error "      config_pattern [pattern] [-h/-s/-t] [if -t: test sequence]"
+        echo "      config_pattern [pattern] [-h/-s/-t] [if -t: test sequence]"
+        usage
+        error
     fi
     IFS=';' read -ra ARR <<< "$names"
     for h in "${ARR[@]}"; do
@@ -62,7 +64,7 @@ function parse_arg {
     RUN=true
     if [[ "$1" == "--help" ]]; then
         echo usage
-        error
+        return 0
     fi
 
     if [[ "$1" == "--cp" ]]; then
@@ -183,4 +185,4 @@ function test_parse_arg {
 EXECUTE="$(parse_arg $@)"
 if [[ $? -ne 0 ]]; then echo $EXECUTE; error; fi
 if [[ $EXECUTE != "usage" ]]; then echo $EXECUTE; fi
-eval "$EXECUTE"
+eval '$EXECUTE'
