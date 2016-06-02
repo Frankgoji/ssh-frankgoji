@@ -1,5 +1,8 @@
 #! /bin/bash
 
+# TODO: make it so that multiple regex patterns (parantheses) can be in the
+# server hostnames
+
 # Function to read config file and return the correct host or correct server
 function config_pattern {
     pattern_re=$1
