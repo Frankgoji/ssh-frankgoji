@@ -64,7 +64,12 @@ function server_regex {
     pfgroup1=""
     pfgroup2=""
     while [[ $reg ]]; do
-        #
+        openparen=$((`expr index "$reg" "\("` - 1))
+        if [[ $openparen -eq 0 ]]; then
+            #
+        else
+            #
+        fi
     done
 }
 
@@ -204,13 +209,28 @@ function test_parse_arg {
     echo "parse_arg test successfully conducted"
 }
 
+# Tests server_regex to see if it returns the correct string
+function test_server_regex {
+    RESULT=$(server_regex "1a" "(1|2)test(a|b)")
+    if [[ $RESULT != "1testa" ]]; then
+        error "test 1 failed, got $RESULT instead of 1testa"
+    fi
+
+    RESULT=$(server_regex "34" "a(1|3)b(2|4)")
+    if [[ $RESULT != "a3b4" ]]; then
+        error "test 2 failed, got $RESULT instead of a3b4"
+    fi
+    echo "server_regex test successfully conducted"
+}
+
 ##### Main program #####
 
 # For testing purposes, uncomment
 # test_config_pattern
 # test_parse_arg
+test_server_regex
 
-EXECUTE="$(parse_arg $@)"
-if [[ $? -ne 0 ]]; then echo $EXECUTE; error; fi
-if [[ $EXECUTE != "usage" ]]; then echo $EXECUTE; fi
-eval '$EXECUTE'
+#EXECUTE="$(parse_arg $@)"
+#if [[ $? -ne 0 ]]; then echo $EXECUTE; error; fi
+#if [[ $EXECUTE != "usage" ]]; then echo $EXECUTE; fi
+#eval '$EXECUTE'
