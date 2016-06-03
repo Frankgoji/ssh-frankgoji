@@ -26,7 +26,7 @@ function config_pattern {
         if [[ "$h" =~ "(" ]]; then
             match=$(echo "$pattern_re" | egrep --regexp="$h")
             if [[ $match ]]; then
-                sedstring=$(server_regex $h $pattern_re)
+                sedstring=$(server_regex $h)
                 echo "$pattern_re" | sed -r '$sedstring'
             fi
 #            in_parens="\((.*)\)"
@@ -52,25 +52,33 @@ function config_pattern {
 # string that can be used to extract the proper host or server. Assumes that
 # there was a parenthesis in the config pattern
 function server_regex {
-    if [[ $# -ne 2 ]]; then
-        error "server_regex only accepts two arguments"
+    if [[ $# -ne 1 ]]; then
+        error "server_regex only accepts one argument"
     fi
-    pat=$1
-    reg=$2
-    lenreg=`expr length $reg`
+    reg=$1
     groups=1
     sgroup1=""
     sgroup2=""
-    pfgroup1=""
-    pfgroup2=""
     while [[ $reg ]]; do
         openparen=$((`expr index "$reg" "\("` - 1))
         if [[ $openparen -eq 0 ]]; then
-            #
+            closeparen=`expr index "$reg" "\)"`
+            sgroup1="$sgroup1${reg:$openparen:$closeparen}"
+            sgroup2="$sgroup2\\$groups"
+            reg=${reg:$closeparen}
+        elif [[ $openparen -gt 0 ]]; then
+            noparens=${reg:0:$(($openparen - 1))}
+            sgroup1="$sgroup1($noparens)?"
+            sgroup2="$sgroup2$noparens"
+            reg=${reg:$openparen}
         else
-            #
+            sgroup1="$sgroup1($reg)?"
+            sgroup2="$sgroup2$reg"
+            reg=""
         fi
+        groups=$(($groups + 1))
     done
+    echo "s/$sgroup1/$sgroup2/"
 }
 
 # Function describing the usage for this command
@@ -211,14 +219,14 @@ function test_parse_arg {
 
 # Tests server_regex to see if it returns the correct string
 function test_server_regex {
-    RESULT=$(server_regex "1a" "(1|2)test(a|b)")
-    if [[ $RESULT != "1testa" ]]; then
-        error "test 1 failed, got $RESULT instead of 1testa"
+    RESULT=$(server_regex "(1|2)test(a|b)")
+    if [[ $RESULT != "s/(1|2)(test)?(a|b)/\1test\3/" ]]; then
+        error "test 1 failed, got $RESULT instead of s/(1|2)(test)?(a|b)/\1test\3/"
     fi
 
-    RESULT=$(server_regex "34" "a(1|3)b(2|4)")
-    if [[ $RESULT != "a3b4" ]]; then
-        error "test 2 failed, got $RESULT instead of a3b4"
+    RESULT=$(server_regex "a(1|3)b(2|4)")
+    if [[ $RESULT != "s/(a)?(1|3)(b)?(2|4)/a\2b\4/" ]]; then
+        error "test 2 failed, got $RESULT instead of s/(a)?(1|3)(b)?(2|4)/a\2b\4/"
     fi
     echo "server_regex test successfully conducted"
 }
