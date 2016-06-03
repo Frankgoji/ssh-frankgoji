@@ -24,23 +24,48 @@ function config_pattern {
     IFS=';' read -ra ARR <<< "$names"
     for h in "${ARR[@]}"; do
         if [[ "$h" =~ "(" ]]; then
-            in_parens="\((.*)\)"
-            if [[ "$h" =~ $in_parens ]]; then
-                in_parens=${BASH_REMATCH[1]}
+            match=$(echo "$pattern_re" | egrep --regexp="$h")
+            if [[ $match ]]; then
+                sedstring=$(server_regex $h $pattern_re)
+                echo "$pattern_re" | sed -r '$sedstring'
             fi
-            if [[ "$pattern_re" =~ $in_parens ]]; then
-                out_parens="(^.*)\(.*\)(.*$)"
-                if [[ "$h" =~ $out_parens ]]; then
-                    echo "${BASH_REMATCH[1]}$pattern_re${BASH_REMATCH[2]}"
-                    return 0
-                fi
-            fi
+#            in_parens="\((.*)\)"
+#            if [[ "$h" =~ $in_parens ]]; then
+#                in_parens=${BASH_REMATCH[1]}
+#            fi
+#            if [[ "$pattern_re" =~ $in_parens ]]; then
+#                out_parens="(^.*)\(.*\)(.*$)"
+#                if [[ "$h" =~ $out_parens ]]; then
+#                    echo "${BASH_REMATCH[1]}$pattern_re${BASH_REMATCH[2]}"
+#                    return 0
+#                fi
+#            fi
         elif [[ "$h" =~ "$pattern_re" ]]; then
             echo "$h"
             return 0
         fi
     done
     error "Pattern \"$pattern_re\" matches no $types"
+}
+
+# Given the pattern from the prompt and the config regex pattern, returns a
+# string that can be used to extract the proper host or server. Assumes that
+# there was a parenthesis in the config pattern
+function server_regex {
+    if [[ $# -ne 2 ]]; then
+        error "server_regex only accepts two arguments"
+    fi
+    pat=$1
+    reg=$2
+    lenreg=`expr length $reg`
+    groups=1
+    sgroup1=""
+    sgroup2=""
+    pfgroup1=""
+    pfgroup2=""
+    while [[ $reg ]]; do
+        #
+    done
 }
 
 # Function describing the usage for this command
