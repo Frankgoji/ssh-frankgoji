@@ -1,8 +1,5 @@
 #! /bin/bash
 
-# TODO: make it so that multiple regex patterns (parantheses) can be in the
-# server hostnames
-
 # Function to read config file and return the correct host or correct server
 function config_pattern {
     pattern_re=$1
@@ -24,10 +21,11 @@ function config_pattern {
     IFS=';' read -ra ARR <<< "$names"
     for h in "${ARR[@]}"; do
         if [[ "$h" =~ "(" ]]; then
-            match=$(echo "$pattern_re" | egrep --regexp="$h")
+            sedstring=$(server_regex $h)
+            echo $sedstring
+            match=$(echo "$pattern_re" | sed '$sedstring')
             if [[ $match ]]; then
-                sedstring=$(server_regex $h)
-                echo "$pattern_re" | sed -r '$sedstring'
+                echo "$match"
             fi
 #            in_parens="\((.*)\)"
 #            if [[ "$h" =~ $in_parens ]]; then
@@ -60,14 +58,14 @@ function server_regex {
     sgroup1=""
     sgroup2=""
     while [[ $reg ]]; do
-        openparen=$((`expr index "$reg" "\("` - 1))
+        openparen=`expr "$(echo $reg | sed 's/(.*$//')" : '.*'`
         if [[ $openparen -eq 0 ]]; then
-            closeparen=`expr index "$reg" "\)"`
+            closeparen=$((`expr "$(echo $reg | sed 's/).*$//')" : '.*'` + 1))
             sgroup1="$sgroup1${reg:$openparen:$closeparen}"
             sgroup2="$sgroup2\\$groups"
             reg=${reg:$closeparen}
         elif [[ $openparen -gt 0 ]]; then
-            noparens=${reg:0:$(($openparen - 1))}
+            noparens=${reg:0:$openparen}
             sgroup1="$sgroup1($noparens)?"
             sgroup2="$sgroup2$noparens"
             reg=${reg:$openparen}
@@ -236,9 +234,9 @@ function test_server_regex {
 # For testing purposes, uncomment
 # test_config_pattern
 # test_parse_arg
-test_server_regex
+# test_server_regex
 
-#EXECUTE="$(parse_arg $@)"
-#if [[ $? -ne 0 ]]; then echo $EXECUTE; error; fi
-#if [[ $EXECUTE != "usage" ]]; then echo $EXECUTE; fi
-#eval '$EXECUTE'
+EXECUTE="$(parse_arg $@)"
+if [[ $? -ne 0 ]]; then echo $EXECUTE; error; fi
+if [[ $EXECUTE != "usage" ]]; then echo $EXECUTE; fi
+eval '$EXECUTE'
