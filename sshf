@@ -99,6 +99,7 @@ function parse_arg {
     PREARGS=""
     POSTARGS=""
     RUN=true
+
     if [[ "$1" == "--help" ]]; then
         echo usage
         return 0
@@ -124,29 +125,34 @@ function parse_arg {
 
     BEFORE_AT=true
     while [ $# != 0 ]; do
-        if [[ "$1" =~ "@" ]]; then
+        cur=$1
+        if [[ "$cur" =~ " " ]]; then
+            cur=\"$cur\"
+        fi
+
+        if [[ "$cur" =~ "@" ]]; then
             if [[ $CHECK_CONFIG = false ]]; then
-                AT=$1
+                AT=$cur
             else
                 host_cap="(^.*)@"
-                if [[ $1 =~ $host_cap ]]; then
+                if [[ $cur =~ $host_cap ]]; then
                     host_pattern=${BASH_REMATCH[1]}
                     AT="$(config_pattern $host_pattern -h)@"
                 fi
                 if [[ $COMM != "scp" ]]; then
                     server_cap="@(.*$)"
-                    if [[ $1 =~ $server_cap ]]; then
+                    if [[ $cur =~ $server_cap ]]; then
                         server_pattern=${BASH_REMATCH[1]}
                         AT="$AT$(config_pattern $server_pattern -s)"
                     fi
                 else
                     server_cap="@(.*):"
-                    if [[ $1 =~ $server_cap ]]; then
+                    if [[ $cur =~ $server_cap ]]; then
                         server_pattern=${BASH_REMATCH[1]}
                         AT="$AT$(config_pattern $server_pattern -s)"
                     fi
                     file_cap=":(.*$)"
-                    if [[ $1 =~ $file_cap ]]; then
+                    if [[ $cur =~ $file_cap ]]; then
                         files=${BASH_REMATCH[1]}
                         AT="$AT:$files"
                     fi
@@ -154,9 +160,9 @@ function parse_arg {
             fi
             BEFORE_AT=false
         elif [[ "$BEFORE_AT" = true ]]; then
-            PREARGS="$PREARGS $1"
+            PREARGS="$PREARGS $cur"
         else
-            POSTARGS="$POSTARGS $1"
+            POSTARGS="$POSTARGS $cur"
         fi
         shift
     done
@@ -296,7 +302,7 @@ function test_server_regex {
 # test_parse_arg
 # test_server_regex
 
-EXECUTE="$(parse_arg $@)"
+EXECUTE=$(parse_arg "$@")
 if [[ $? -ne 0 ]]; then echo $EXECUTE; error; fi
 if [[ $EXECUTE != "usage" ]]; then echo $EXECUTE; fi
-eval '$EXECUTE'
+eval "$EXECUTE"
