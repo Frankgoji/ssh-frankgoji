@@ -1,5 +1,6 @@
 #! /bin/bash
 
+CURRDIR=$(dirname "$0")
 # Function to read config file and return the correct host or correct server
 # NOTE: regex in the config file for servers should be in parentheses
 function config_pattern {
@@ -8,10 +9,10 @@ function config_pattern {
         names=$3
         types="tests"
     elif [[ $# == 2 && $2 == "-h" ]]; then
-        names=$(sed "4q;d" ~/Documents/personal_projects/sshf/config)
+        names=$(sed "4q;d" $CURRDIR/config)
         types="hosts"
     elif [[ $# == 2 && $2 == "-s" ]]; then
-        names=$(sed "7q;d" ~/Documents/personal_projects/sshf/config)
+        names=$(sed "7q;d" $CURRDIR/config)
         types="servers"
     else
         echo "Usage:"
