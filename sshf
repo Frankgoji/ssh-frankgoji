@@ -33,11 +33,11 @@ function config_pattern {
             return 0
         fi
     done
-    error "Pattern \"$pattern_re\" matches no $types"
+    echo "$pattern_re"
 }
 
 # Given the pattern from the prompt and the config regex pattern, returns the
-# correct match if it exists, and the empty string if not. Assumes that there
+# correct match if it exists, and the original string if not. Assumes that there
 # was a parenthesis in the config pattern
 function server_regex {
     if [[ $# -ne 2 ]]; then
@@ -73,7 +73,7 @@ function server_regex {
         sedres="s/$sgroup1/$sgroup2/"
         echo $(echo $pat | sed -E $sedres)
     else
-        echo ""
+        echo "$pat"
     fi
     return 0
 }
