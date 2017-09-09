@@ -73,7 +73,7 @@ function server_regex {
         sedres="s/$sgroup1/$sgroup2/"
         echo $(echo $pat | sed -E $sedres)
     else
-        echo "$pat"
+        echo ""
     fi
     return 0
 }
