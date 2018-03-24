@@ -1,6 +1,8 @@
 #! /bin/bash
 
 CURRDIR=$(dirname "$0")
+TEST=false
+TEST_CONFIG=""
 # Function to read config file and return the correct host or correct server
 # NOTE: regex in the config file for servers should be in parentheses
 function config_pattern {
@@ -9,10 +11,24 @@ function config_pattern {
         names=$3
         types="tests"
     elif [[ $# == 2 && $2 == "-h" ]]; then
-        names=$(sed "4q;d" $CURRDIR/config)
+        if [[ $TEST = false ]]; then
+            names=$(sed "4q;d" $CURRDIR/config)
+        else
+            names=$(sed "4q;d" << HERE
+$TEST_CONFIG
+HERE
+)
+        fi
         types="hosts"
     elif [[ $# == 2 && $2 == "-s" ]]; then
-        names=$(sed "7q;d" $CURRDIR/config)
+        if [[ $TEST = false ]]; then
+            names=$(sed "7q;d" $CURRDIR/config)
+        else
+            names=$(sed "7q;d" << HERE
+$TEST_CONFIG
+HERE
+)
+        fi
         types="servers"
     else
         echo "Usage:"
@@ -133,12 +149,12 @@ function parse_arg {
 
         if [[ "$cur" =~ "@" ]]; then
             if [[ $CHECK_CONFIG = false ]]; then
-                AT=$cur
+                AT="$AT $cur"
             else
                 host_cap="(^.*)@"
                 if [[ $cur =~ $host_cap ]]; then
                     host_pattern=${BASH_REMATCH[1]}
-                    AT="$(config_pattern $host_pattern -h)@"
+                    AT="$AT $(config_pattern $host_pattern -h)@"
                 fi
                 if [[ $COMM != "scp" ]]; then
                     server_cap="@(.*$)"
@@ -183,6 +199,20 @@ function error {
 
 ### Unit Tests ###
 
+# Sets the TEST_CONFIG variable to a format that can pass as a config file using
+# a here doc
+function set_test_config {
+    TEST_CONFIG="1
+2
+3
+4
+5
+6
+7"
+    TEST_CONFIG=$(printf "$TEST_CONFIG" | sed "s/4/$1/")
+    TEST_CONFIG=$(printf "$TEST_CONFIG" | sed "s/7/$2/")
+}
+
 # Tests config_pattern to see if it returns the correct pattern, or correctly
 # errors.
 function test_config_pattern {
@@ -213,8 +243,24 @@ function test_parse_arg {
         error "parse_arg test failed, got $RESULT"
     fi
 
+    TEST=true
+    set_test_config "host1" "server2"
     RESULT=$(parse_arg --fs -sup 1@2 -nup)
     if [[ $RESULT != "sshfs -sup host1@server2 -nup" ]]; then
+        error "parse_arg test failed, got $RESULT"
+    fi
+    echo "parse_arg test successfully conducted"
+
+    set_test_config "host1;host3" "server2"
+    RESULT=$(parse_arg --cp -sup 3@2:~ -nup)
+    if [[ $RESULT != "scp -sup host3@server2:~ -nup" ]]; then
+        error "parse_arg test failed, got $RESULT"
+    fi
+    echo "parse_arg test successfully conducted"
+
+    set_test_config "host1;host3" "server1;server2"
+    RESULT=$(parse_arg --cp -sup 3@1:~ 1@2:~ . -nup)
+    if [[ $RESULT != "scp -sup host3@server1:~ host1@server2:~ . -nup" ]]; then
         error "parse_arg test failed, got $RESULT"
     fi
     echo "parse_arg test successfully conducted"
@@ -250,30 +296,6 @@ function test_server_regex {
     RESULT=$(server_regex "a(1|3)b(2|4)" "3b2")
     if [[ $RESULT != "a3b2" ]]; then
         echo "test 2.1 failed, got $RESULT instead of a3b2"
-        pass=$(($pass + 1))
-    fi
-
-    RESULT=$(server_regex "(svl|bgl|wfd)-junos-d([0-9]{3}).juniper.net" "svl034")
-    if [[ $RESULT != "svl-junos-d034.juniper.net" ]]; then
-        echo "test 3 failed, got $RESULT instead of svl-junos-d034.juniper.net"
-        pass=$(($pass + 1))
-    fi
-
-    RESULT=$(server_regex "(svl|bgl|wfd)-junos-d([0-9]{3}).juniper.net" "svld034")
-    if [[ $RESULT != "svl-junos-d034.juniper.net" ]]; then
-        echo "test 3.1 failed, got $RESULT instead of svl-junos-d034.juniper.net"
-        pass=$(($pass + 1))
-    fi
-
-    RESULT=$(server_regex "(svl|bgl|wfd)-junos-d([0-9]{3}).juniper.net" "svljunos034")
-    if [[ $RESULT != "svl-junos-d034.juniper.net" ]]; then
-        echo "test 3.2 failed, got $RESULT instead of svl-junos-d034.juniper.net"
-        pass=$(($pass + 1))
-    fi
-
-    RESULT=$(server_regex "(svl|bgl|wfd)-junos-d([0-9]{3}).juniper.net" "svldjunos034")
-    if [[ $RESULT != "" ]]; then
-        echo "test 3.2 failed, got $RESULT instead of empty string"
         pass=$(($pass + 1))
     fi
 
